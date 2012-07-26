@@ -8,11 +8,11 @@
 #
 # <tt>> id = NationalPatientId.new(20).to_s</tt>
 #
-# <tt>"000-00M"</tt>
+# <tt>"000-06V"</tt>
 #
 # <tt>> id = NationalPatientId.new(123456789).to_s</tt>
 #
-# <tt>"52D-F69"</tt>
+# <tt>"1MT-4P33"</tt>
 #
 #
 
