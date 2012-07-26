@@ -1,3 +1,4 @@
 .project
 *.gem
-doc/*
+doc/
+pkg/
