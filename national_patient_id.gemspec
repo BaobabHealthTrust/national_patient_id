@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 1.2") if s.respond_to? :required_rubygems_version=
   s.authors = ["Baobab Health"]
-  s.date = %q{2012-07-25}
+  s.date = %q{2012-08-01}
   s.description = %q{Generate nationally unique patient IDs}
   s.email = %q{developers@baobabhealth.org}
   s.extra_rdoc_files = ["LICENSE", "README.rdoc", "lib/national_patient_id.rb"]
