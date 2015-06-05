@@ -1,7 +1,10 @@
 #!/usr/bin/ruby -w
 
+# ==================================================================================
+# Version 1.0.0
+# ==================================================================================
 # == NationalPatientId
-# 
+#
 # Generate Unique Patient IDs
 #
 # === Example
@@ -15,6 +18,55 @@
 # <tt>"1MT-4P33"</tt>
 #
 #
+# ==================================================================================
+# Version 2.0.0 Onwards
+# ==================================================================================
+# == NationalPatientId
+#
+# Generate Unique Patient IDs
+#
+# === Example
+#
+# <tt>> id = NationalPatientId.new(20).to_s</tt>
+#
+# <tt>"000-0000M1"</tt>
+#
+# <tt>> id = NationalPatientId.new(123456789).to_s</tt>
+#
+# <tt>"005-2DF699"</tt>
+#
+#
+
+=begin
+
+JAVASCRIPT VALIDATION LOGIC:
+
+function luhnCheckDigit(number) {
+  var validChars = "0123456789ACDEFGHJKLMNPRTUVWXY";
+  number = number.toUpperCase().trim();
+  var sum = 0;
+  for (var i = 0; i < number.length; i++) {
+    var ch = number.charAt(number.length - i - 1);
+    if (validChars.indexOf(ch) < 0) {
+      alert("Invalid character(s) found!");
+      return false;
+    }
+    var digit = ch.charCodeAt(0) - 48;
+    var weight;
+    if (i % 2 == 0) {
+      weight = (2 * digit) - parseInt(digit / 5) * 9;
+    }
+    else {
+      weight = digit;
+    }
+    sum += weight;
+  }
+  sum = Math.abs(sum) + 10;
+  var digit = (10 - (sum % 10)) % 10;
+  return digit;
+}
+
+=end
 
 class NationalPatientId
 
@@ -27,7 +79,7 @@ class NationalPatientId
   # mistaken for 8, 1, 0, 0, 5, 2 respectively
   @@base_map = ['0','1','2','3','4','5','6','7','8','9','A','C','D','E','F','G',
                 'H','J','K','L','M','N','P','R','T','U','V','W','X','Y']
-              
+
   @@reverse_map = {'0' => 0,'1' => 1,'2' => 2,'3' => 3,'4' => 4,'5' => 5,
                    '6' => 6,'7' => 7,'8' => 8,'9' => 9,
                    'A' => 10,'C' => 11,'D' => 12,'E' => 13,'F' => 14,'G' => 15,
@@ -39,46 +91,40 @@ class NationalPatientId
   #
   # <tt>num</tt> is the decimal equivalent of the Base <tt>base</tt> Id to be
   # created without the check digit
-  def initialize(num, src_base = 10, base = 30)
+  def initialize(num, size = 6, check_digit_source = true, src_base = 10, base = 30)
     if num && src_base == 10
       num = num.to_i
-      num = num * 10 + NationalPatientId.check_digit(num)
+
+      if check_digit_source
+
+        num = num * 10 + NationalPatientId.check_digitV1(num)
+
+      end
     end
     @decimal_id = NationalPatientId.to_decimal(num, src_base)
     @base = base
-    @value = self.convert(@decimal_id).rjust(6,'0')
-  end
 
-  # @author: Mike Mckay
-  # Calculate a check digit using Luhn's Algorithm as implemented in BART
-  # http://en.wikipedia.org/wiki/Luhn_algorithm
-  # PatientIdentifier.calculate_checkdigit
-  def self.check_digit(number)
-    # This is Luhn's algorithm for checksums
-    # http://en.wikipedia.org/wiki/Luhn_algorithm
-    # Same algorithm used by PIH (except they allow characters)
-    number = number.to_s
-    number = number.split(//).collect { |digit| digit.to_i }
-    parity = number.length % 2
+    if !check_digit_source
 
-    sum = 0
-    number.each_with_index do |digit,index|
-      digit = digit * 2 if index%2==parity
-      digit = digit - 9 if digit > 9
-      sum = sum + digit
+      @value = self.convert(@decimal_id).rjust(size,'0')
+
+      @value = "#{@value}#{NationalPatientId.check_digitV2(@value)}"
+
+    else
+
+      @value = self.convert(@decimal_id).rjust(6,'0')
+
     end
 
-    checkdigit = 0
-    checkdigit = checkdigit +1 while ((sum+(checkdigit))%10)!=0
-    checkdigit
+    @value
   end
 
   # Convert a Base 10 <tt>number</tt> to the specified <tt>base</tt>
   def convert(num)
     results = ''
     quotient = num.to_i
-      
-    while quotient > 0 
+
+    while quotient > 0
       results = @@base_map[quotient % @base] + results
       quotient = (quotient / @base)
     end
@@ -104,10 +150,10 @@ class NationalPatientId
   # SQL to populate Ids from <tt>start_num</tt> to <tt>end_num</tt> into a table
   def self.ids_sql(start_num, end_num)
     "INSERT INTO national_patient_ids (value,decimal_id) VALUES " +
-    (start_num.to_i..end_num.to_i).map{|num|
-      id = NationalPatientId.new(num, 10, 30)
-      "'#{id}',#{id.decimal_id})"
-    }.join(',') + ';'
+        (start_num.to_i..end_num.to_i).map{|num|
+          id = NationalPatientId.new(num, 6, true, 10, 30)
+          "'#{id}',#{id.decimal_id})"
+        }.join(',') + ';'
   end
 
   # Convert given <tt>num</tt> in from the specified <tt>from_base</tt> to
@@ -120,12 +166,237 @@ class NationalPatientId
     decimal
   end
 
+  # @author: Mike Mckay
+  # Calculate a check digit using Luhn's Algorithm as implemented in BART
+  # http://en.wikipedia.org/wiki/Luhn_algorithm
+  # PatientIdentifier.calculate_checkdigit
+  def self.check_digitV1(number)
+    # This is Luhn's algorithm for checksums
+    # http://en.wikipedia.org/wiki/Luhn_algorithm
+    # Same algorithm used by PIH (except they allow characters)
+    number = number.to_s
+    number = number.split(//).collect { |digit| digit.to_i }
+    parity = number.length % 2
+
+    sum = 0
+    number.each_with_index do |digit,index|
+      digit = digit * 2 if index%2==parity
+      digit = digit - 9 if digit > 9
+      sum = sum + digit
+    end
+
+    # checkdigit = 0
+    # checkdigit = checkdigit +1 while ((sum+(checkdigit))%10)!=0
+
+    checkdigit = (sum * 9) % 10
+
+    checkdigit
+  end
+
+  def self.check_digitV2(id)
+
+    id = id.to_s.strip.gsub(/\s/, "").gsub(/\-/, "")
+
+    number = id.to_s.strip.upcase
+
+    sum = 0
+
+    ( 0..(number.length - 1) ).reverse_each do |i|
+
+      ch = number[i]
+
+      raise "Invalid character(s) found!" and return if !@@base_map.include?(ch)
+
+      digit = ch.ord - 48
+
+      weight = 0
+
+      if i % 2 == 0
+
+        weight = (2 * digit) - ((digit / 5).to_i * 9)
+
+      else
+
+        weight = digit
+
+      end
+
+      sum += weight
+
+    end
+
+    sum = sum.abs + 10
+
+    digit = (10 - (sum % 10)) % 10
+
+    digit
+
+  end
+
   # Checks if <tt>num<tt> has a correct check digit
   def self.valid?(num)
     core_id = num / 10
     check_digit = num % 10 # last digit
 
-    check_digit == NationalPatientId.check_digit(core_id)
+    check_digit == NationalPatientId.check_digitV1(core_id)
+  end
+
+  # Checks if <tt>id<tt> has a correct check digit
+  def self.v2valid?(id)
+
+    id = id.to_s.strip.gsub(/\s/, "").gsub(/\-/, "")
+
+    core_id = id.to_s.strip[0, (id.to_s.strip.length - 1)]
+
+    check_digit = id.to_s.strip[(id.to_s.strip.length - 1), (id.to_s.strip.length)].to_i
+
+    check_digit == NationalPatientId.check_digitV2(core_id)
+
+  end
+
+  def self.couch_table
+
+    "require 'couchrest_model'
+
+    class Npid < CouchRest::Model::Base
+
+      def incremental_id=(value)
+        self['_id']=value.to_s
+      end
+
+      def incremental_id
+          self['_id']
+      end
+
+      property :national_id, String
+      property :site_code, String
+      property :assigned, TrueClass, :default => false
+      property :region, String
+
+      timestamps!
+
+      design do
+        view :by__id
+        view :by_national_id
+        view :by_site_code
+        view :by_site_code_and_assigned
+        view :by_assigned
+      end
+
+    end
+  "
+
+  end
+
+  def self.couch_ids_json(start_num, end_num, shuffle = true, size = 8, file_limit = 300000)
+
+    if shuffle
+
+      Dir.mkdir("./tmp") if !File.exist?("./tmp")
+
+      folder = "./tmp/#{Time.now.strftime("%Y%m%d%H%M%S")}_#{start_num}_#{end_num}"
+
+      Dir.mkdir(folder) if !File.exist?(folder)
+
+      file_number = 0
+
+      docs = "{\"docs\":[\n"
+
+      lines = 0
+
+      j = start_num.to_i
+
+      (start_num.to_i..end_num.to_i).map{|i| i}.shuffle.each{|n|
+
+        docs += "{\"_id\":\"#{j}\",\"national_id\":\"#{NationalPatientId.new(n, size, false).to_s.gsub(/\-/, "")}\"}"
+
+        if lines == file_limit - 1
+
+          file_number += 1
+
+          docs += "\n]}"
+
+          file = File.open("#{folder}/#{"%06d" % file_number}.json", "w+")
+
+          file.write(docs)
+
+
+          file.close
+
+        else
+
+          docs += ",\n"
+
+        end
+
+        j += 1
+
+      }
+
+      file_number += 1
+
+      docs += "\n]}"
+
+      file = File.open("#{folder}/#{"%06d" % file_number}.json", "w+")
+
+      file.write(docs)
+
+      file.close
+
+    else
+
+      Dir.mkdir("./tmp") if !File.exist?("./tmp")
+
+      folder = "./tmp/#{Time.now.strftime("%Y%m%d%H%M%S")}_#{start_num}_#{end_num}"
+
+      Dir.mkdir(folder) if !File.exist?(folder)
+
+      file_number = 0
+
+      docs = "{\"docs\":[\n"
+
+      lines = 0
+
+      j = start_num.to_i
+
+      (start_num.to_i..end_num.to_i).each{|n|
+
+        docs += "{\"_id\":\"#{j}\",\"national_id\":\"#{NationalPatientId.new(n, size, false).to_s.gsub(/\-/, "")}\"}"
+
+        if lines == file_limit - 1
+
+          file_number += 1
+
+          docs += "\n]}"
+
+          file = File.open("#{folder}/#{"%06d" % file_number}.json", "w+")
+
+          file.write(docs)
+
+          file.close
+
+        else
+
+          docs += ",\n"
+
+        end
+
+        j += 1
+
+      }
+
+      file_number += 1
+
+      docs += "\n]}"
+
+      file = File.open("#{folder}/#{"%06d" % file_number}.json", "w+")
+
+      file.write(docs)
+
+      file.close
+
+    end
+
   end
 
 end
