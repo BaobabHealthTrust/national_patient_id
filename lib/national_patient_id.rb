@@ -312,11 +312,17 @@ class NationalPatientId
 
       (start_num.to_i..end_num.to_i).map{|i| i}.shuffle.each{|n|
 
-        docs += "{\"_id\":\"#{j}\",\"national_id\":\"#{NationalPatientId.new(n, size, false).to_s.gsub(/\-/, "")}\"}"
+        npid = NationalPatientId.new(n, size, false).to_s.gsub(/\-/, "")
 
-        logger.info "Adding #{NationalPatientId.new(n, size, false).to_s.gsub(/\-/, "")}"
+        docs += "{\"_id\":\"#{j}\",\"national_id\":\"#{npid}\", \"type\":\"Npid\"}"
 
-        if lines == file_limit - 1
+        logger.info "Adding #{npid}"
+
+        j += 1
+
+        lines += 1
+
+        if lines == file_limit - 1 or j == end_num.to_i - 1
 
           file_number += 1
 
@@ -326,10 +332,13 @@ class NationalPatientId
 
           file.write(docs)
 
-
           file.close
 
           logger.info "Saving file #{"%06d" % file_number}.json"
+
+          docs = "{\"docs\":[\n"
+
+          lines = 0
 
         else
 
@@ -337,23 +346,9 @@ class NationalPatientId
 
         end
 
-        j += 1
-
       }
 
-      file_number += 1
-
-      docs = docs.strip.gsub(/,$/, "")
-
-      docs += "\n]}"
-
-      file = File.open("#{folder}/#{"%06d" % file_number}.json", "w+")
-
-      file.write(docs)
-
-      file.close
-
-      logger.info "Saving file #{"%06d" % file_number}.json"
+      docs = ""
 
     else
 
@@ -375,11 +370,17 @@ class NationalPatientId
 
       (start_num.to_i..end_num.to_i).each{|n|
 
-        docs += "{\"_id\":\"#{j}\",\"national_id\":\"#{NationalPatientId.new(n, size, false).to_s.gsub(/\-/, "")}\"}"
+        npid = NationalPatientId.new(n, size, false).to_s.gsub(/\-/, "")
 
-        logger.info "Adding #{NationalPatientId.new(n, size, false).to_s.gsub(/\-/, "")}"
+        docs += "{\"_id\":\"#{j}\",\"national_id\":\"#{npid}\", \"type\":\"Npid\"}"
 
-        if lines == file_limit - 1
+        logger.info "Adding #{npid}"
+
+        j += 1
+
+        lines += 1
+
+        if lines == file_limit - 1 or j == end_num.to_i - 1
 
           file_number += 1
 
@@ -393,29 +394,19 @@ class NationalPatientId
 
           logger.info "Saving file #{"%06d" % file_number}.json"
 
+          docs = "{\"docs\":[\n"
+
+          lines = 0
+
         else
 
           docs += ",\n"
 
         end
 
-        j += 1
-
       }
 
-      file_number += 1
-
-      docs = docs.strip.gsub(/,$/, "")
-
-      docs += "\n]}"
-
-      file = File.open("#{folder}/#{"%06d" % file_number}.json", "w+")
-
-      file.write(docs)
-
-      file.close
-
-      logger.info "Saving file #{"%06d" % file_number}.json"
+      docs = ""
 
     end
 
