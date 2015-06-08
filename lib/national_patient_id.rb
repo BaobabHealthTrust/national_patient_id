@@ -68,6 +68,8 @@ function luhnCheckDigit(number) {
 
 =end
 
+require "logger"
+
 class NationalPatientId
 
   attr :decimal_id
@@ -304,11 +306,15 @@ class NationalPatientId
 
       lines = 0
 
+      logger = Logger.new File.open("#{folder}/log.log", "w+")
+
       j = start_num.to_i
 
       (start_num.to_i..end_num.to_i).map{|i| i}.shuffle.each{|n|
 
         docs += "{\"_id\":\"#{j}\",\"national_id\":\"#{NationalPatientId.new(n, size, false).to_s.gsub(/\-/, "")}\"}"
+
+        logger.info "Adding #{NationalPatientId.new(n, size, false).to_s.gsub(/\-/, "")}"
 
         if lines == file_limit - 1
 
@@ -323,6 +329,8 @@ class NationalPatientId
 
           file.close
 
+          logger.info "Saving file #{"%06d" % file_number}.json"
+
         else
 
           docs += ",\n"
@@ -335,6 +343,8 @@ class NationalPatientId
 
       file_number += 1
 
+      docs = docs.strip.gsub(/,$/, "")
+
       docs += "\n]}"
 
       file = File.open("#{folder}/#{"%06d" % file_number}.json", "w+")
@@ -342,6 +352,8 @@ class NationalPatientId
       file.write(docs)
 
       file.close
+
+      logger.info "Saving file #{"%06d" % file_number}.json"
 
     else
 
@@ -357,11 +369,15 @@ class NationalPatientId
 
       lines = 0
 
+      logger = Logger.new File.open("#{folder}/log.log", "w+")
+
       j = start_num.to_i
 
       (start_num.to_i..end_num.to_i).each{|n|
 
         docs += "{\"_id\":\"#{j}\",\"national_id\":\"#{NationalPatientId.new(n, size, false).to_s.gsub(/\-/, "")}\"}"
+
+        logger.info "Adding #{NationalPatientId.new(n, size, false).to_s.gsub(/\-/, "")}"
 
         if lines == file_limit - 1
 
@@ -375,6 +391,8 @@ class NationalPatientId
 
           file.close
 
+          logger.info "Saving file #{"%06d" % file_number}.json"
+
         else
 
           docs += ",\n"
@@ -387,6 +405,8 @@ class NationalPatientId
 
       file_number += 1
 
+      docs = docs.strip.gsub(/,$/, "")
+
       docs += "\n]}"
 
       file = File.open("#{folder}/#{"%06d" % file_number}.json", "w+")
@@ -394,6 +414,8 @@ class NationalPatientId
       file.write(docs)
 
       file.close
+
+      logger.info "Saving file #{"%06d" % file_number}.json"
 
     end
 
