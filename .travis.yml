@@ -1,0 +1,4 @@
+language: ruby
+rvm:
+  - 2.1.4
+script: ruby -I . test/test_national_patient_id.rb
