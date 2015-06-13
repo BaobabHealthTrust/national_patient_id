@@ -16,13 +16,13 @@ class TestNationalPatientId < Test::Unit::TestCase
 
   def test_create
     assert_equal "A00006",  @id.value
-    assert_equal NUM*10 + NationalPatientId.check_digit(NUM), @id.decimal_id
+    assert_equal NUM*10 + NationalPatientId.check_digitV1(NUM), @id.decimal_id
 
 
     assert_equal "0005HU",  NationalPatientId.new(500).value
 
-    assert_equal '00000M',  NationalPatientId.new('M',30).value
-    assert_equal '8A08A8',  NationalPatientId.new('8A08A8',30).value
+    assert_equal '00000M',  NationalPatientId.new('M',6,true,30,30).value
+    assert_equal '8A08A8',  NationalPatientId.new('8A08A8',6,true,30).value
 
     assert_equal '000000', NationalPatientId.new(nil).value
     assert_equal '000000', NationalPatientId.new('').value
@@ -45,7 +45,7 @@ class TestNationalPatientId < Test::Unit::TestCase
   end
 
   def test_to_decimal
-    assert_equal(NUM*10 + NationalPatientId.check_digit(NUM),
+    assert_equal(NUM*10 + NationalPatientId.check_digitV1(NUM),
                  NationalPatientId.to_decimal(@id.value))
     assert_equal(20, NationalPatientId.to_decimal('000-00M'))
     assert_equal(50, NationalPatientId.to_decimal('1M'))
