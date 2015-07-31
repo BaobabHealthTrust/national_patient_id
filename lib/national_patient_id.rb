@@ -76,6 +76,7 @@ class NationalPatientId
   attr :value
   attr :base
   @@separator = '-'
+  @@CHECK_DIGIT_VER = 2
 
   # we are taking out letters B, I, O, Q, S, Z because they might be
   # mistaken for 8, 1, 0, 0, 5, 2 respectively
@@ -93,7 +94,8 @@ class NationalPatientId
   #
   # <tt>num</tt> is the decimal equivalent of the Base <tt>base</tt> Id to be
   # created without the check digit
-  def initialize(num, size = 6, check_digit_source = true, src_base = 10, base = 30)
+  def initialize(num, size = 6, check_digit_source = true, src_base = 10,
+                 base = 30)
     if num && src_base == 10
       num = num.to_i
 
@@ -108,13 +110,16 @@ class NationalPatientId
 
     if !check_digit_source
 
-      @value = self.convert(@decimal_id).rjust(size,'0')
-
-      @value = "#{@value}#{NationalPatientId.check_digitV2(@value)}"
-
+      @value = self.convert(@decimal_id).rjust(size-1,'0')
+      
+      if @@CHECK_DIGIT_VER == 2
+        @value = "#{@value}#{NationalPatientId.check_digitV2(@value)}"
+      elsif @@CHECK_DIGIT_VER == 3
+        @value = "#{@value}#{NationalPatientId.check_digitV3(@value)}"
+      end
     else
 
-      @value = self.convert(@decimal_id).rjust(6,'0')
+      @value = self.convert(@decimal_id).rjust(size,'0')
 
     end
 
@@ -168,6 +173,11 @@ class NationalPatientId
     decimal
   end
 
+  # Version of check digit which determines the algorithm to be use
+  def self.check_digit_ver
+    @@CHECK_DIGIT_VER
+  end
+  
   # @author: Mike Mckay
   # Calculate a check digit using Luhn's Algorithm as implemented in BART
   # http://en.wikipedia.org/wiki/Luhn_algorithm
@@ -235,6 +245,38 @@ class NationalPatientId
 
   end
 
+  # This is Luhn Mod N algorithm for checksums
+  # http://en.wikipedia.org/wiki/Luhn_mod_N_algorithm
+  def self.check_digitV3(number)
+    
+    factor = 2
+    sum = 0
+    n = @@base_map.length;
+    input = number.to_s.scan(/./)
+
+    # Starting from the right and working leftwards is easier since 
+    # the initial "factor" will always be "2" 
+    input.reverse.each do |i|
+      code_point = @@reverse_map[i]
+      addend = factor * code_point
+      
+      # Alternate the "factor" that each "code_point" is multiplied by
+      factor = (factor == 2) ? 1 : 2
+      
+      # Sum the digits of the "addend" as expressed in base "n"
+      addend = (addend / n) + (addend % n)
+      sum += addend
+    end
+
+    # Calculate the number that must be added to the "sum" 
+    # to make it divisible by "n"
+    remainder = sum % n
+    check_code_point = (n - remainder) % n
+
+    @@base_map[check_code_point]
+  end
+
+
   # Checks if <tt>num<tt> has a correct check digit
   def self.valid?(num)
     core_id = num / 10
@@ -243,7 +285,7 @@ class NationalPatientId
     check_digit == NationalPatientId.check_digitV1(core_id)
   end
 
-  # Checks if <tt>id<tt> has a correct check digit
+  # Checks if <tt>id<tt> has a correct v2 check digit
   def self.v2valid?(id)
 
     id = id.to_s.strip.gsub(/\s/, "").gsub(/\-/, "")
@@ -254,6 +296,16 @@ class NationalPatientId
 
     check_digit == NationalPatientId.check_digitV2(core_id)
 
+  end
+  
+  # Checks if <tt>id<tt> has a correct v3 check digit
+  def self.v3valid?(id)
+
+    id = id.to_s.strip.gsub(/\s/, "").gsub(/\-/, "")
+    core_id = id.to_s.strip[0, (id.to_s.strip.length - 1)]
+    check_digit = id.to_s.strip[(id.to_s.strip.length - 1), (id.to_s.strip.length)].to_i
+    
+    check_digit == NationalPatientId.check_digitV3(core_id)
   end
 
   def self.couch_table

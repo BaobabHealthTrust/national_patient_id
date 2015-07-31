@@ -23,7 +23,36 @@ class TestNationalPatientId < Test::Unit::TestCase
 
     assert_equal '00000M',  NationalPatientId.new('M',6,true,30,30).value
     assert_equal '8A08A8',  NationalPatientId.new('8A08A8',6,true,30).value
-
+    
+    
+    if NationalPatientId.check_digit_ver == 2
+    
+      # check_digit_source=false, V2
+      assert_equal '0000M7',  NationalPatientId.new('M',6,false,30,30).value
+      assert_equal '8A08A83',  NationalPatientId.new('8A08A8',6,false,30).value
+      assert_equal '80A8A83',  NationalPatientId.new('80A8A8',6,false,30).value
+      assert_equal '8AA8083',  NationalPatientId.new('8AA808',6,false,30).value
+      
+      assert_equal '8A80A02',  NationalPatientId.new('8A80A0',6,false,30).value
+      assert_equal '8A08482',  NationalPatientId.new('8A0848',6,false,30).value
+      
+      assert_equal '000018',  NationalPatientId.new('1',6,false,10,30).value
+      assert_equal '000HM3',  NationalPatientId.new('500',6,false,10,30).value
+      
+    elsif NationalPatientId.check_digit_ver == 3
+    
+      # check_digit_source=false, V3
+      assert_equal '0000ML',  NationalPatientId.new('M',6,false,30,30).value
+      assert_equal '8A08A8M',  NationalPatientId.new('8A08A8',6,false,30).value
+      assert_equal '80A8A80',  NationalPatientId.new('80A8A8',6,false,30).value
+      assert_equal '8AA808M',  NationalPatientId.new('8AA808',6,false,30).value
+      
+      assert_equal '8A80A0F',  NationalPatientId.new('8A80A0',6,false,30).value
+      assert_equal '8A0848V',  NationalPatientId.new('8A0848',6,false,30).value
+      assert_equal '00001X',  NationalPatientId.new('1',6,false,10,30).value
+      assert_equal '000HM3',  NationalPatientId.new('500',6,false,10,30).value
+    end
+    
     assert_equal '000000', NationalPatientId.new(nil).value
     assert_equal '000000', NationalPatientId.new('').value
   end
