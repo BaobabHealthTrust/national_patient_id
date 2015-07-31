@@ -76,7 +76,7 @@ class NationalPatientId
   attr :value
   attr :base
   @@separator = '-'
-  @@CHECK_DIGIT_VER = 2
+  @@CHECK_DIGIT_VER = 3
 
   # we are taking out letters B, I, O, Q, S, Z because they might be
   # mistaken for 8, 1, 0, 0, 5, 2 respectively
