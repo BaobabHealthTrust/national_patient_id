@@ -314,7 +314,7 @@ class NationalPatientId
 
         npid = NationalPatientId.new(n, size, false).to_s.gsub(/\-/, "")
 
-        docs += "{\"_id\":\"#{j}\",\"national_id\":\"#{npid}\", \"type\":\"Npid\",\"created_at\":\"#{Time.now}\",\"assigned\":false}"
+        docs += "{\"_id\":\"#{j}\",\"national_id\":\"#{npid}\", \"type\":\"Npid\",\"created_at\":\"#{Time.now}\",\"assigned\":#{false}}"
 
         logger.info "Adding #{npid}"
 
